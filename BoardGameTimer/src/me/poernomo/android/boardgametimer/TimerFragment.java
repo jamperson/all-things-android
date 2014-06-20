@@ -17,7 +17,7 @@ import android.widget.Toast;
 public class TimerFragment extends Fragment {
 
 	private CountDownTimer countDownTimer;
-	private final long mStartTime = 15 * 1000;
+	private final long mStartTime = 45 * 1000;
 	private final long mInterval = 1 * 1000;
 	private TextView mTimeShow;
 	private Button mStart;
@@ -159,8 +159,8 @@ public class TimerFragment extends Fragment {
 		@Override
 		public void onTick(long millisUntilFinished) {
 			mSecondsRemaining = millisUntilFinished / 1000;
-			if (mSecondsRemaining == 7)
-				speakWords("this round is ending in");
+			if (mSecondsRemaining == 10)
+				speakWords("ten seconds remaining");
 			else if (mSecondsRemaining <= 5)
 				speakWords("" + mSecondsRemaining);
 			else if (mSecondsRemaining == (mStartTime / 1000) - 1)
