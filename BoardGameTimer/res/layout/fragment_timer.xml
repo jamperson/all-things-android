@@ -1,40 +1,80 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/round_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="48dp"
+        android:gravity="left"
+        android:text="@string/initial_round"
+        android:textSize="16pt" />
+
+    <TextView
+        android:id="@+id/stage_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center_horizontal"
+        android:text="@string/stage_empty"
+        android:textSize="12pt" />
 
     <TextView
         android:id="@+id/time_remaining_textview"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="86dp"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center"
+        android:padding="16dp"
         android:text="@string/initial_time"
-        android:textSize="18pt"
-        android:gravity="center_horizontal" />
+        android:textSize="24pt" />
 
     <LinearLayout
-        android:layout_width="160dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:orientation="horizontal"
-        android:weightSum="100" >
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal" >
 
         <Button
             android:id="@+id/start_button"
-            android:layout_width="match_parent"
+            android:layout_width="120dp"
             android:layout_height="wrap_content"
-            android:layout_weight="50"
+            android:padding="8dp"
             android:text="@string/start" />
 
         <Button
             android:id="@+id/reset_button"
-            android:layout_width="match_parent"
+            android:layout_width="120dp"
             android:layout_height="wrap_content"
-            android:layout_weight="50"
+            android:padding="8dp"
             android:text="@string/reset" />
     </LinearLayout>
 
-</RelativeLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="8dp"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/skip_button"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="@string/skip" />
+
+        <Button
+            android:id="@+id/reset_age_button"
+            android:layout_width="120dp"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="@string/reset_age" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -2,7 +2,9 @@ package me.poernomo.android.boardgametimer;
 
 import java.util.Locale;
 
+import android.app.ActionBar;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.speech.tts.TextToSpeech;
@@ -17,23 +19,37 @@ import android.widget.Toast;
 public class TimerFragment extends Fragment {
 
 	private CountDownTimer countDownTimer;
-	private final long mStartTime = 45 * 1000;
+	private final long mRoundTimeLength = 45;
+	private final long mInterimTimeLength = 15;
 	private final long mInterval = 1 * 1000;
+	private final static int MAX_ROUND = 6;
 	private TextView mTimeShow;
+	private TextView mRound;
+	private TextView mStage;
 	private Button mStart;
 	private Button mReset;
+	private Button mSkip;
+	private Button mResetAge;
 	private long mSecondsRemaining;
 	private String mSecondsText;
 	private String mMinuteText;
 	private boolean timerStarted;
+	private GameState gameState;
 
 	private TextToSpeech myTTS;
 	private int MY_DATA_CHECK_CODE = 0;
+	private int roundCount = 1;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getActivity().setTitle(R.string.timer_title);
+	}
+
+	@Override
+	public void onDestroy() {
+		myTTS.shutdown();
+		super.onDestroy();
 	}
 
 	@Override
@@ -47,7 +63,7 @@ public class TimerFragment extends Fragment {
 							@Override
 							public void onInit(int status) {
 								if (status == TextToSpeech.SUCCESS) {
-									myTTS.setLanguage(Locale.US);
+									myTTS.setLanguage(Locale.UK);
 								} else if (status == TextToSpeech.ERROR) {
 									Toast.makeText(getActivity(),
 											"Text to speech failed",
@@ -56,7 +72,7 @@ public class TimerFragment extends Fragment {
 
 							}
 						});
-				myTTS.setSpeechRate((float) 0.8);
+//				myTTS.setSpeechRate((float) 0.9);
 			} else {
 				Intent installTTSIntent = new Intent();
 				installTTSIntent
@@ -71,51 +87,134 @@ public class TimerFragment extends Fragment {
 			Bundle savedInstanceState) {
 		View v = inflater.inflate(R.layout.fragment_timer, parent, false);
 
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+			ActionBar actionBar = getActivity().getActionBar();
+			actionBar.setTitle(R.string.app_name);
+		}
+
 		Intent checkTTSIntent = new Intent();
 		checkTTSIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
 		startActivityForResult(checkTTSIntent, MY_DATA_CHECK_CODE);
 
+		mTimeShow = (TextView) v.findViewById(R.id.time_remaining_textview);
+		mRound = (TextView) v.findViewById(R.id.round_textview);
+		mStage = (TextView) v.findViewById(R.id.stage_textview);
+		mStart = (Button) v.findViewById(R.id.start_button);
+		mReset = (Button) v.findViewById(R.id.reset_button);
+		mSkip = (Button) v.findViewById(R.id.skip_button);
+		mResetAge = (Button) v.findViewById(R.id.reset_age_button);
+
 		timerStarted = false;
+
+		// TODO: get gameState from SavedInstance
+		gameState = GameState.ROUND;
 
 		// TODO: find value of remaining time? = startTime? get from
 		// SavedInstance
-		mSecondsRemaining = mStartTime / 1000;
+		setTimerLength();
 
-		mTimeShow = (TextView) v.findViewById(R.id.time_remaining_textview);
-		mStart = (Button) v.findViewById(R.id.start_button);
 		mStart.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
-				if (!timerStarted) {
-					countDownTimer = new RoundTimer(mSecondsRemaining * 1000,
-							mInterval);
-					countDownTimer.start();
-					mStart.setText(R.string.pause);
-					timerStarted = true;
-				} else {
-					countDownTimer.cancel();
-					mStart.setText(R.string.start);
-					timerStarted = false;
-				}
+				if (!timerStarted)
+					startTimer();
+				else
+					pauseTimer();
 			}
-
 		});
-		mReset = (Button) v.findViewById(R.id.reset_button);
+
 		mReset.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
-				countDownTimer.cancel();
 				resetTimer();
+			}
+		});
+
+		mSkip.setOnClickListener(new View.OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				if (countDownTimer != null)
+					countDownTimer.cancel();
+				skipToNextStage();
+			}
+
+		});
+
+		mResetAge.setOnClickListener(new View.OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				resetAge();
 			}
 		});
 
 		return v;
 	}
 
-	// TODO: highly inefficient. fix this.
+	protected void resetAge() {
+		roundCount = 1;
+		gameState = GameState.ROUND;
+		resetTimer();
+	}
+
+	private void skipToNextStage() {
+		if (gameState == GameState.ROUND) {
+			gameState = GameState.INTERIM;
+		} else {
+			gameState = GameState.ROUND;
+			roundCount++;
+		}
+		setTimerLength();
+		startTimer();
+		updateDisplay();
+	}
+
+	private void setTimerLength() {
+		if (gameState == GameState.ROUND)
+			mSecondsRemaining = mRoundTimeLength;
+		else
+			mSecondsRemaining = mInterimTimeLength;
+	}
+
+	private void startTimer() {
+		countDownTimer = new MyCountdownTimer(mSecondsRemaining, mInterval);
+		countDownTimer.start();
+		mStart.setText(R.string.pause);
+		timerStarted = true;
+	}
+
+	private void pauseTimer() {
+		countDownTimer.cancel();
+		mStart.setText(R.string.start);
+		timerStarted = false;
+	}
+
+	private void resetTimer() {
+		countDownTimer.cancel();
+		if (gameState == GameState.ROUND)
+			mSecondsRemaining = mRoundTimeLength;
+		else
+			mSecondsRemaining = mInterimTimeLength;
+		mStart.setText(R.string.start);
+		timerStarted = false;
+		updateDisplay();
+	}
+
+	// TODO: inefficient. fix this.
 	private void updateDisplay() {
+		mRound.setText("Round " + roundCount);
+
+		if (timerStarted) {
+			if (gameState == GameState.ROUND)
+				mStage.setText(R.string.stage_choose);
+			else
+				mStage.setText(R.string.stage_play);
+		} else
+			mStage.setText(R.string.stage_empty);
+
 		String leadingZero = "0";
 		long minuteRemaining = mSecondsRemaining / 60;
 		if (minuteRemaining >= 10) {
@@ -132,59 +231,44 @@ public class TimerFragment extends Fragment {
 		mTimeShow.setText(mMinuteText + ":" + mSecondsText);
 	}
 
-	private void resetTimer() {
-		mSecondsRemaining = mStartTime / 1000;
-		mStart.setText(R.string.start);
-		timerStarted = false;
-		updateDisplay();
-	}
-
 	private void speakWords(String speech) {
 		myTTS.speak(speech, TextToSpeech.QUEUE_FLUSH, null);
 
 	}
 
-	public class RoundTimer extends CountDownTimer {
+	public class MyCountdownTimer extends CountDownTimer {
 
-		public RoundTimer(long millisInFuture, long countDownInterval) {
-			super(millisInFuture, countDownInterval);
+		public MyCountdownTimer(long secondsInFuture, long countDownInterval) {
+			super(secondsInFuture * 1000, countDownInterval);
 		}
 
 		@Override
 		public void onFinish() {
-			speakWords("times up");
-			resetTimer();
+			if (gameState == GameState.ROUND)
+				speakWords("please play your card");
+			if (roundCount < MAX_ROUND)
+				skipToNextStage();
+			else
+				resetAge();
 		}
 
 		@Override
 		public void onTick(long millisUntilFinished) {
 			mSecondsRemaining = millisUntilFinished / 1000;
-			if (mSecondsRemaining == 10)
-				speakWords("ten seconds remaining");
-			else if (mSecondsRemaining <= 5)
-				speakWords("" + mSecondsRemaining);
-			else if (mSecondsRemaining == (mStartTime / 1000) - 1)
-				speakWords("starting new round");
+			if (gameState == GameState.ROUND) {
+				if (mSecondsRemaining == 10)
+					speakWords("ten seconds remaining");
+				else if (mSecondsRemaining <= 5)
+					speakWords("" + mSecondsRemaining);
+				else if (mSecondsRemaining == mRoundTimeLength - 1)
+					speakWords("round" + roundCount + "has started");
+			} else {
+				if (mSecondsRemaining == 5)
+					speakWords("starting round" + (roundCount + 1) + "inn");
+				else if (mSecondsRemaining <= 3)
+					speakWords("" + mSecondsRemaining);
+			}
 			updateDisplay();
-		}
-	}
-
-	public class InterimTimer extends CountDownTimer {
-
-		public InterimTimer(long millisInFuture, long countDownInterval) {
-			super(millisInFuture, countDownInterval);
-		}
-
-		@Override
-		public void onFinish() {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onTick(long millisUntilFinished) {
-			// TODO Auto-generated method stub
-
 		}
 	}
 }
