@@ -20,7 +20,7 @@ public class TimerFragment extends Fragment {
 
 	private CountDownTimer countDownTimer;
 	private final long mRoundTimeLength = 45;
-	private final long mInterimTimeLength = 15;
+	private final long mInterimTimeLength = 12;
 	private final long mInterval = 1 * 1000;
 	private final static int MAX_ROUND = 6;
 	private TextView mTimeShow;
